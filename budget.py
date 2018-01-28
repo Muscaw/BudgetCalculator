@@ -5,15 +5,28 @@ from month import *
 
 
 class MonthlyPayment:
-    def __init__(self, name: str, monthly_fee:float, months:int=Month.ALL_YEAR):
-        self.name = name
-        self.monthly_fee = monthly_fee
-        self.payable_months = months
+    def __init__(self, name: str, monthly_fee:float, months:MonthCoverage=MonthCoverage.allYear(), percentage=1.0):
+        self._name = name
+        self._monthly_fee = monthly_fee
+        self._payable_months = months
+        self._percentage = percentage
+
+    @property
+    def payable_months(self):
+        return self._payable_months
+
+    @property
+    def monthly_fee(self):
+        return self._monthly_fee
+    
+    @property
+    def name(self):
+        return self._name
 
 class YearlyPayment(MonthlyPayment):
 
-    def __init__(self, name: str, yearly_fee:float, months:int=Month.ALL_YEAR):
-        numberOfMonths = sum(1 for x in range(0,12) if (Month.getEncodedMonth(x) & months) > 0)
+    def __init__(self, name: str, yearly_fee:float, months:MonthCoverage=MonthCoverage.allYear()):
+        numberOfMonths = months.size()
         super(YearlyPayment, self).__init__(name, yearly_fee / numberOfMonths, months)
 
 
@@ -48,24 +61,26 @@ class BudgetCalculator:
             print()
 
     def plot_monthly_amounts_due(self, full_salary):
+
+        months_string = [x.name for x in MONTHS]
         bars = list()
         monthly_amounts = [0 for _ in range(0,12)]
         for payment in self.payments:
             months_due = list()
             for i in range(0,12):
-                if (int(payment.payable_months) & Month.getEncodedMonth(i)) > 0:
+                if payment.payable_months.covers(MONTHS[i]):
                     months_due.append(payment.monthly_fee)
                     monthly_amounts[i] = monthly_amounts[i] + payment.monthly_fee
                 else:
                     months_due.append(0)
             bars.append(
-                Bar(x=Month.months_string,
+                Bar(x=months_string,
                         y=months_due,
                     name=payment.name)
             )
 
         bars.append(
-            Bar(x=Month.months_string,
+            Bar(x=months_string,
                 y=[full_salary - x for x in monthly_amounts],
                 name="Free money")
         )
